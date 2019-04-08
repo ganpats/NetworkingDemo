@@ -48,17 +48,9 @@ export  default class SearchComponent extends Component {
         return (
             <View style={styles.main}>
                 <Text style={styles.title}>Search For Github User</Text>
-                <TextInput
-                    style={styles.searchInput}
-                />
-                <TouchableHighlight 
-                    style={styles.button}
-                    underlayColor="white"
-                >
-                <Text 
-                    style={styles.buttonText}>
-                    SEARCH
-                </Text>
+                <TextInput style={styles.searchInput} onChange={this.handleChange}/>
+                <TouchableHighlight style={styles.button} underlayColor="white" onPress={this.handleSubmit}>
+                  <Text style={styles.buttonText}>SEARCH</Text>
                 </TouchableHighlight>
             </View>
         )
