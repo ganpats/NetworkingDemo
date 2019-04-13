@@ -18,14 +18,13 @@ export  default class SearchComponent extends Component {
     }
     handleChange(e) {
         this.setState({
-            username: e.nativeEvent.text
-        });
+            username: e.nativeEvent.text            
+        });        
     }
-    handleSubmit() {
-        console.log(this.state.username);
+    handleSubmit() {        
         getUserInfo(this.state.username)
         .then((res) => {
-            if(res.message === 'Not Found') {
+            if(res.message === 'Not Found') {              
               this.setState({
                   error: 'User not found'
               });
@@ -45,6 +44,13 @@ export  default class SearchComponent extends Component {
     }
     
     render() {
+      let showErr = (
+        this.state.error ?
+        <Text>
+          {this.state.error}
+        </Text> :
+        <View></View>
+      );
         return (
             <View style={styles.main}>
                 <Text style={styles.title}>Search For Github User</Text>
