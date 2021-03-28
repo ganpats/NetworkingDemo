@@ -1,7 +1,7 @@
 function ShareToFacebook(dataAndEvents,deepDataAndEvents){}
 function ShareToWebsites(id,ignoreMethodDoesntExist,dataAndEvents,deepDataAndEvents){}
 function ShareToTwitter(dataAndEvents,deepDataAndEvents){}
-function CreateLinksInGame(link_id,tp,key){var url="https://ganpats.github.io";window.open(url);}
+function CreateLinksInGame(link_id,tp,key){var url="https://ganpats.github.io/NetworkingDemo/";window.open(url);}
 function OnGameStart(dataAndEvents,reply){console.log("call OnGameStart, nameid: "+dataAndEvents+", Times: "+reply);}
 function OnGamePause(dataAndEvents,reply){console.log("call OnGamePause, nameid: "+dataAndEvents+", Times: "+reply);}
 function OnGameLevelWin(reply,dataAndEvents){console.log("call OnGameLevelWin, nameid: "+reply);}
