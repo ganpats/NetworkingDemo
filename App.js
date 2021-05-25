@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View, NavigatorIOS } from 'react-native';
 import SearchComponent from './src/components/SearchComponent';
-// Test change
+
 export default class App extends React.Component {
   render() {
     return (
