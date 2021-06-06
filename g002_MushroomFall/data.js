@@ -4011,7 +4011,7 @@ null,
 [],
 [],
 [
-"//ganpats.github.io/NetworkingDemo/gapi.js"
+"//"
 ]
 ]
 ],
