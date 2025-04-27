@@ -2,23 +2,6 @@
     text-align: center;
     margin: 20px;
 }
-.image-gallery {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-top: 20px;
-}
-.image-gallery img {
-    width: 200px;
-    height: 200px;
-    margin: 10px;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: transform 0.2s;
-}
-.image-gallery img:hover {
-    transform: scale(1.05);
-}
 .fullscreen {
     position: fixed;
     top: 0;
@@ -42,5 +25,11 @@
     right: 20px;
     color: white;
     font-size: 30px;
+    cursor: pointer;
+}
+.next {
+    font-size: 20px;
+    padding-inline-start: 0px;
+    padding-inline-end: 0px;
     cursor: pointer;
 }

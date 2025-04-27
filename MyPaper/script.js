@@ -1,8 +1,18 @@
 document.addEventListener('DOMContentLoaded', () => {
     const dateInput = document.getElementById('date');
     const fetchImagesButton = document.getElementById('fetchImages');
-    const imageGallery = document.getElementById('imageGallery');
+    let currentImgIndex = 0;
+    let imageUrls = [];
 
+    // set  today as default date
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2, '0');
+    const mm = String(today.getMonth() + 1).padStart(2, '0'); // January is 0!
+    const yyyy = today.getFullYear();
+    const formattedDate = `${yyyy}-${mm}-${dd}`;
+    dateInput.value = formattedDate;
+    dateInput.setAttribute('max', formattedDate); // set max date to today
+    
     fetchImagesButton.addEventListener('click', () => {
         const selectedDate = dateInput.value;
         if (!selectedDate) {
@@ -19,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const dateParts = date.split('-');
         const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`; // Format date to DD/MM/YYYY
         const apiUrl = `https://epaper.patrika.com/Home/GetAllpages?editionid=${editionId}&editiondate=${formattedDate}`;
-        console.log(apiUrl);
         fetch(apiUrl, {
             method: 'GET',
             headers: {
@@ -28,20 +37,14 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .then(response => response.json())
         .then(data => {
-            const imageUrls = data.map(e => e.HighResolution.replace('_mr.jpg', '.jpg'));
-            displayImages(imageUrls);
+            imageUrls = data.map(e => e.HighResolution.replace('_mr.jpg', '.jpg'));
+            displayImages();
         })
     }
 
-    function displayImages(imageUrls) {
-        imageGallery.innerHTML = '';
-        imageUrls.forEach(imageUrl => {
-            const img = document.createElement('img');
-            img.src = imageUrl;
-            img.alt = 'Image';
-            img.addEventListener('click', () => openFullscreen(img.src));
-            imageGallery.appendChild(img);
-        });
+    function displayImages() {
+        currentImgIndex = 0;
+        openFullscreen(imageUrls[currentImgIndex]);
     }
 
     // add next and previous buttons in fullscreen mode
@@ -60,25 +63,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         const prevBtn = document.createElement('button');
+        prevBtn.classList.add('next');
         prevBtn.innerText = '<';
         prevBtn.addEventListener('click', () => {
             const currentImg = document.querySelector('.fullscreen img');
-            const currentSrc = currentImg.src;
-            const currentIndex = Array.from(imageGallery.children).findIndex(img => img.src === currentSrc);
-            if (currentIndex > 0) {
-                const prevImg = imageGallery.children[currentIndex - 1].src;
+            if (currentImgIndex > 0) {
+                currentImgIndex--;
+                const prevImg = imageUrls[currentImgIndex];
                 currentImg.src = prevImg;
             }
         });
         
         const nextBtn = document.createElement('button');
+        nextBtn.classList.add('next');
         nextBtn.innerText = '>';
         nextBtn.addEventListener('click', () => {
             const currentImg = document.querySelector('.fullscreen img');
-            const currentSrc = currentImg.src;
-            const currentIndex = Array.from(imageGallery.children).findIndex(img => img.src === currentSrc);
-            if (currentIndex < imageGallery.children.length - 1) {
-                const nextImg = imageGallery.children[currentIndex + 1].src;
+            if (currentImgIndex < imageUrls.length - 1) {
+                currentImgIndex++;
+                const nextImg = imageUrls[currentImgIndex];
                 currentImg.src = nextImg;
             }
         });
@@ -86,10 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fullscreenDiv.appendChild(prevBtn);
         fullscreenDiv.appendChild(img);
         fullscreenDiv.appendChild(nextBtn);
-
         fullscreenDiv.appendChild(closeBtn);
-        
-        
         document.body.appendChild(fullscreenDiv);
     }
 });
