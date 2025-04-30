@@ -47,8 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
         openFullscreen(imageUrls[currentImgIndex]);
     }
 
-    // add next and previous buttons in fullscreen mode
-    function openFullscreen(src) {
+    function openFullscreen(src) { 
         const fullscreenDiv = document.createElement('div');
         fullscreenDiv.classList.add('fullscreen');
         
@@ -62,6 +61,10 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.removeChild(fullscreenDiv);
         });
 
+        const indexIndicator = document.createElement('div');
+        indexIndicator.classList.add('index-indicator');
+        indexIndicator.innerText = `${currentImgIndex + 1} / ${imageUrls.length}`;
+
         const prevBtn = document.createElement('button');
         prevBtn.classList.add('next');
         prevBtn.innerText = '<';
@@ -69,8 +72,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentImg = document.querySelector('.fullscreen img');
             if (currentImgIndex > 0) {
                 currentImgIndex--;
-                const prevImg = imageUrls[currentImgIndex];
-                currentImg.src = prevImg;
+                currentImg.src = imageUrls[currentImgIndex];;
+                indexIndicator.innerText = `${currentImgIndex + 1} / ${imageUrls.length}`;
             }
         });
         
@@ -81,14 +84,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentImg = document.querySelector('.fullscreen img');
             if (currentImgIndex < imageUrls.length - 1) {
                 currentImgIndex++;
-                const nextImg = imageUrls[currentImgIndex];
-                currentImg.src = nextImg;
+                currentImg.src = imageUrls[currentImgIndex];;
+                indexIndicator.innerText = `${currentImgIndex + 1} / ${imageUrls.length}`;
             }
         });
 
         fullscreenDiv.appendChild(prevBtn);
         fullscreenDiv.appendChild(img);
         fullscreenDiv.appendChild(nextBtn);
+        fullscreenDiv.appendChild(indexIndicator);
         fullscreenDiv.appendChild(closeBtn);
         document.body.appendChild(fullscreenDiv);
     }

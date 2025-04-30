@@ -33,3 +33,14 @@
     padding-inline-end: 0px;
     cursor: pointer;
 }
+.index-indicator {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-size: 18px;
+    background-color: rgba(0,0,0,0.6);
+    padding: 6px 12px;
+    border-radius: 6px;
+  }
