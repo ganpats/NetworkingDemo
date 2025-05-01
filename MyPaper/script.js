@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
         prevBtn.addEventListener('click', () => {
             if (currentImgIndex > 0) {
                 currentImgIndex--;
-                img.src = imageUrls[currentImgIndex];
+                img.src = hdUrls[currentImgIndex];
                 indexIndicator.innerText = `${currentImgIndex + 1} / ${imageUrls.length}`;
             }
         });
