@@ -47,53 +47,73 @@ document.addEventListener('DOMContentLoaded', () => {
         openFullscreen(imageUrls[currentImgIndex]);
     }
 
-    function openFullscreen(src) { 
+    function openFullscreen(src) {
+        currentImgIndex = imageUrls.indexOf(src);
+    
         const fullscreenDiv = document.createElement('div');
         fullscreenDiv.classList.add('fullscreen');
-        
+    
         const img = document.createElement('img');
-        img.src = src;
-        
+        img.src = ''; // start blank until loaded
+    
+        const loader = document.createElement('div');
+        loader.classList.add('loader');
+        loader.innerText = 'Loading...'; // replace with a spinner if needed
+    
         const closeBtn = document.createElement('span');
         closeBtn.classList.add('close');
         closeBtn.innerHTML = '&times;';
         closeBtn.addEventListener('click', () => {
             document.body.removeChild(fullscreenDiv);
         });
-
+    
         const indexIndicator = document.createElement('div');
         indexIndicator.classList.add('index-indicator');
         indexIndicator.innerText = `${currentImgIndex + 1} / ${imageUrls.length}`;
-
+    
         const prevBtn = document.createElement('button');
-        prevBtn.classList.add('next');
+        prevBtn.classList.add('prev');
         prevBtn.innerText = '<';
         prevBtn.addEventListener('click', () => {
-            const currentImg = document.querySelector('.fullscreen img');
             if (currentImgIndex > 0) {
                 currentImgIndex--;
-                currentImg.src = imageUrls[currentImgIndex];;
+                img.src = imageUrls[currentImgIndex];
                 indexIndicator.innerText = `${currentImgIndex + 1} / ${imageUrls.length}`;
             }
         });
-        
+    
         const nextBtn = document.createElement('button');
         nextBtn.classList.add('next');
         nextBtn.innerText = '>';
         nextBtn.addEventListener('click', () => {
-            const currentImg = document.querySelector('.fullscreen img');
             if (currentImgIndex < imageUrls.length - 1) {
                 currentImgIndex++;
-                currentImg.src = imageUrls[currentImgIndex];;
-                indexIndicator.innerText = `${currentImgIndex + 1} / ${imageUrls.length}`;
+                updateImage();
             }
         });
-
+    
+        function updateImage() {
+            loader.style.display = 'block';
+            img.style.display = 'none';
+            const newSrc = imageUrls[currentImgIndex];
+            const tempImg = new Image();
+            tempImg.onload = () => {
+                img.src = newSrc;
+                img.style.display = 'block';
+                loader.style.display = 'none';
+                indexIndicator.innerText = `${currentImgIndex + 1} / ${imageUrls.length}`;
+            };
+            tempImg.src = newSrc;
+        }
+    
         fullscreenDiv.appendChild(prevBtn);
         fullscreenDiv.appendChild(img);
+        fullscreenDiv.appendChild(loader);
         fullscreenDiv.appendChild(nextBtn);
         fullscreenDiv.appendChild(indexIndicator);
         fullscreenDiv.appendChild(closeBtn);
         document.body.appendChild(fullscreenDiv);
+    
+        updateImage(); // Load the initial image with loader
     }
 });
