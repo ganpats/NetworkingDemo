@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fetchImagesButton = document.getElementById('fetchImages');
     let currentImgIndex = 0;
     let imageUrls = [];
+    let hdUrls = [];
 
     // set  today as default date
     const today = new Date();
@@ -37,7 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .then(response => response.json())
         .then(data => {
-            imageUrls = data.map(e => e.HighResolution.replace('_mr.jpg', '.jpg'));
+            imageUrls = data.map(e => e.HighResolution);
+            hdUrls = data.map(e => e.HighResolution.replace('_mr.jpg', '.jpg'));
             displayImages();
         })
     }
@@ -94,16 +96,15 @@ document.addEventListener('DOMContentLoaded', () => {
     
         function updateImage() {
             loader.style.display = 'block';
-            img.style.display = 'none';
-            const newSrc = imageUrls[currentImgIndex];
-            const tempImg = new Image();
-            tempImg.onload = () => {
-                img.src = newSrc;
-                img.style.display = 'block';
+            img.src = imageUrls[currentImgIndex];;
+            const hdSrc = hdUrls[currentImgIndex];
+            const hdImg = new Image();
+            hdImg.onload = () => {
+                img.src = hdSrc;
                 loader.style.display = 'none';
-                indexIndicator.innerText = `${currentImgIndex + 1} / ${imageUrls.length}`;
             };
-            tempImg.src = newSrc;
+            hdImg.src = hdSrc;
+            indexIndicator.innerText = `${currentImgIndex + 1} / ${imageUrls.length}`;
         }
     
         fullscreenDiv.appendChild(prevBtn);
