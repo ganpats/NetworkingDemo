@@ -41,7 +41,31 @@ document.addEventListener('DOMContentLoaded', () => {
             imageUrls = data.map(e => e.HighResolution);
             hdUrls = data.map(e => e.HighResolution.replace('_mr.jpg', '.jpg'));
             displayImages();
+            preloadImages(imageUrls)
+            .then(() => {
+                console.log('All normal images loaded. Now loading HD images...');
+                return preloadImages(hdUrls); // Preload HD images after normal images
+            })
+            .then(() => {
+                console.log('All HD images loaded.');
+            })
+            .catch(error => {
+                console.error(error); // Handle any errors that occurred during loading
+            });
         })
+    }
+
+    // Function to preload images and return a Promise
+    function preloadImages(urls) {
+        const promises = urls.map(url => {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.src = url;
+                img.onload = () => resolve(url); // Resolve the promise when the image loads
+                img.onerror = () => reject(new Error(`Failed to load image: ${url}`)); // Reject if there's an error
+            });
+        });
+        return Promise.all(promises); // Return a promise that resolves when all images are loaded
     }
 
     function displayImages() {
