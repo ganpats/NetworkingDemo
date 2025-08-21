@@ -1,0 +1,129 @@
+/* Dark theme base */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #121212;
+  color: #f1f1f1;
+}
+
+/* Header */
+header {
+  background: #1e1e1e;
+  padding: 12px;
+  text-align: center;
+  border-bottom: 1px solid #333;
+}
+
+header h1 {
+  font-size: 1.2rem;
+  margin: 0;
+  color: #ff5252;
+}
+
+#back-btn {
+  background: #ff5252;
+  border: none;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  float: left;
+}
+
+#back-btn:hover {
+  background: #ff6b6b;
+}
+
+/* Story list container */
+#story-list {
+  padding: 15px;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 1fr; /* Mobile: single column */
+}
+
+/* Responsive breakpoints */
+@media (min-width: 600px) {
+  #story-list {
+    grid-template-columns: repeat(2, 1fr); /* Tablet: 2 columns */
+  }
+}
+
+@media (min-width: 900px) {
+  #story-list {
+    grid-template-columns: repeat(3, 1fr); /* Desktop: 3 columns */
+  }
+}
+
+@media (min-width: 1200px) {
+  #story-list {
+    grid-template-columns: repeat(4, 1fr); /* Wide screens: 4 columns */
+  }
+}
+
+/* Card */
+.card {
+  background: #1e1e1e;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+}
+.card img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+}
+.card-content {
+  padding: 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.card-content h2 {
+  font-size: 1rem;
+  margin: 0 0 8px;
+  color: #ff6b6b;
+}
+.card-content p {
+  font-size: 0.9rem;
+  margin: 0;
+  color: #ddd;
+  flex-grow: 1;
+}
+
+/* Story detail */
+#story-detail {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto; /* Center on wide screens */
+}
+#story-detail h2 {
+  color: #ff6b6b;
+  margin-bottom: 10px;
+}
+#story-detail img {
+  width: 100%;
+  margin: 15px 0;
+  border-radius: 10px;
+}
+#story-detail p {
+  line-height: 1.6;
+  color: #ccc;
+  font-size: 1rem;
+}
+
+/* Loading */
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: #888;
+  grid-column: 1 / -1; /* span full width in grid */
+}
