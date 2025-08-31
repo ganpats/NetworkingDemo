@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Expense Quick Add</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Tailwind config for dark theme background */
+    :root { color-scheme: dark; }
+    body { background: linear-gradient(180deg,#0f172a,#020617); }
+    /* small autocomplete list style */
+    .autocomplete-list { max-height: 40vh; overflow:auto; }
+  </style>
+</head>
+<body class="min-h-screen text-gray-100 antialiased">
+  <div class="max-w-xl mx-auto p-4">
+    <header class="mb-4">
+      <h1 class="text-2xl font-semibold">Expense Entry</h1>
+      <p class="text-sm text-gray-400">Quick add purchases — multi-item, estimates from last price</p>
+    </header>
+
+    <main class="bg-slate-900/60 rounded-2xl p-4 shadow-lg">
+      <div class="mb-3">
+        <label class="block text-xs text-gray-300">Date</label>
+        <input id="date" type="date" class="w-full mt-1 p-3 rounded-lg bg-slate-800 border border-slate-700" />
+      </div>
+
+      <div class="mb-3">
+        <label class="block text-xs text-gray-300">Shop</label>
+        <input id="shop" placeholder="Shop name" class="w-full mt-1 p-3 rounded-lg bg-slate-800 border border-slate-700" />
+      </div>
+
+      <div id="itemsContainer" class="space-y-3">
+        <!-- item rows added here -->
+      </div>
+
+      <div class="flex gap-2 mt-4">
+        <button id="addItemBtn" class="flex-1 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500">+ Add item</button>
+        <button id="saveBtn" class="py-2 px-4 rounded-lg bg-green-600 hover:bg-green-500">Save</button>
+      </div>
+
+      <div class="mt-4 p-3 rounded-lg bg-slate-800 border border-slate-700">
+        <div class="flex justify-between">
+          <div class="text-sm text-gray-300">Estimated total</div>
+          <div id="estimatedTotal" class="text-lg font-semibold">₹0</div>
+        </div>
+      </div>
+
+      <div id="msg" class="mt-3 text-sm text-center"></div>
+    </main>
+
+    <footer class="text-xs text-gray-500 mt-4">
+      Tip: Start typing an item name — suggestions will appear and selecting one fills last purchase info.
+    </footer>
+  </div>
+
+  <template id="itemRowTpl">
+    <div class="item-row p-3 rounded-lg bg-slate-800 border border-slate-700 space-y-2">
+      <div class="flex items-center justify-between">
+        <input class="particular flex-1 p-2 rounded-md bg-slate-900 border border-slate-700" placeholder="Product name" />
+        <button class="removeBtn ml-2 px-3 py-1 rounded-md bg-red-600 text-sm">Remove</button>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2">
+        <input class="qty p-2 rounded-md bg-slate-900 border border-slate-700" placeholder="Qty (e.g. 1)" inputmode="decimal" />
+        <select class="unit p-2 rounded-md bg-slate-900 border border-slate-700">
+          <option value="kg">kg</option>
+          <option value="g">g</option>
+          <option value="l">L</option>
+          <option value="ml">ml</option>
+          <option value="each">each</option>
+          <option value="packet">packet</option>
+        </select>
+        <input class="pricePaid p-2 rounded-md bg-slate-900 border border-slate-700" placeholder="Price (optional)" inputmode="decimal" />
+      </div>
+
+      <div class="text-xs text-gray-400 flex justify-between">
+        <div class="lastInfo">Last: -</div>
+        <div class="estimated">Est: ₹0</div>
+      </div>
+
+      <div class="autocomplete-list hidden absolute z-50 bg-slate-900 border border-slate-700 mt-1 rounded-md w-full"></div>
+    </div>
+  </template>
+
+  <script>
+    const API_BASE = 'https://script.google.com/macros/s/AKfycbzUh4XlVMbvC9WlKfR-sP6UxDzbxaRCXxpgYfLioNc_RhA2lbrkf-hrcUsyIbTomst-vw/exec';
+
+    // --- Utilities for unit normalization & conversion
+    function toStandard(quantity, unit) {
+      unit = (unit||'').toLowerCase();
+      const q = parseFloat(quantity) || 0;
+      if (['kg','kilogram','kilograms'].includes(unit)) return {value: q*1000, base: 'g'};
+      if (['g','gram','grams'].includes(unit)) return {value: q, base: 'g'};
+      if (['l','litre','liter'].includes(unit)) return {value: q*1000, base: 'ml'};
+      if (['ml','milliliter','millilitre'].includes(unit)) return {value: q, base: 'ml'};
+      if (['each','pc','pcs','piece','pieces','packet'].includes(unit)) return {value: q, base: 'each'};
+      return {value: q, base: unit || 'each'};
+    }
+
+    function estimatedPriceFromLast(last, qty, unit) {
+      // last: {lastPricePerStandardUnit, baseUnit}
+      if (!last || !last.lastPricePerStandardUnit) return 0;
+      const std = toStandard(qty, unit);
+      // if base mismatch, we cannot convert reliably (but usually both are 'g' or 'ml' or 'each')
+      if (std.base !== last.baseUnit) {
+        // try best-effort: if last.baseUnit is 'g' and std.base is 'g' etc. Otherwise fallback.
+        // For simplicity: if base mismatch, return last.lastPricePaid (per-record) scaled by qty (unsafe)
+        return Math.round((last.lastPricePaid || 0) * (qty || 1));
+      }
+      const perStd = parseFloat(last.lastPricePerStandardUnit) || 0;
+      const total = perStd * std.value;
+      return Math.round(total);
+    }
+
+    // --- DOM management
+    const itemsContainer = document.getElementById('itemsContainer');
+    const addItemBtn = document.getElementById('addItemBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const dateInput = document.getElementById('date');
+    const shopInput = document.getElementById('shop');
+    const estimatedTotalEl = document.getElementById('estimatedTotal');
+    const msgEl = document.getElementById('msg');
+    const itemTpl = document.getElementById('itemRowTpl').content;
+
+    // set default date to today
+    dateInput.value = new Date().toISOString().slice(0,10);
+
+    function createItemRow(data = {}) {
+      const clone = itemTpl.cloneNode(true);
+      const row = clone.querySelector('.item-row');
+      row.style.position = 'relative';
+      const particular = row.querySelector('.particular');
+      const qty = row.querySelector('.qty');
+      const unit = row.querySelector('.unit');
+      const pricePaid = row.querySelector('.pricePaid');
+      const lastInfo = row.querySelector('.lastInfo');
+      const estimated = row.querySelector('.estimated');
+      const removeBtn = row.querySelector('.removeBtn');
+      const autoList = row.querySelector('.autocomplete-list');
+
+      particular.value = data.particular || '';
+      qty.value = data.quantity || '';
+      unit.value = data.unit || 'kg';
+      pricePaid.value = data.pricePaid || '';
+
+      // helper: set estimated display
+      let lastFetched = null;
+      function updateEstimate() {
+        const q = parseFloat(qty.value) || 0;
+        const u = unit.value || 'each';
+        let est = 0;
+        if (pricePaid.value) est = Math.round(parseFloat(pricePaid.value) || 0);
+        else if (lastFetched) est = estimatedPriceFromLast(lastFetched, q, u);
+        estimated.textContent = 'Est: ₹' + est;
+        // update total
+        updateTotal();
+      }
+
+      // fetch suggestions
+      let fetchTimer = null;
+      particular.addEventListener('input', (ev) => {
+        const v = particular.value.trim();
+        if (fetchTimer) clearTimeout(fetchTimer);
+        if (!v) { autoList.innerHTML = ''; autoList.classList.add('hidden'); return; }
+        fetchTimer = setTimeout(()=> {
+          fetch(API_BASE + '?action=search&q=' + encodeURIComponent(v))
+            .then(r=>r.json())
+            .then(data=>{
+              autoList.innerHTML = '';
+              if (!data || !data.length) { autoList.classList.add('hidden'); return; }
+              data.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'p-2 hover:bg-slate-700 cursor-pointer text-sm';
+                el.innerHTML = `<div class="font-medium">${item.particular}</div>
+                                <div class="text-xs text-gray-400">Last ${item.lastQuantity}${item.lastUnit} • ₹${item.lastPricePaid} on ${item.lastDate}</div>`;
+                el.addEventListener('click', ()=> {
+                  particular.value = item.particular;
+                  // set last info
+                  lastFetched = {
+                    lastDate: item.lastDate,
+                    lastQuantity: item.lastQuantity,
+                    lastUnit: item.lastUnit,
+                    lastPricePaid: item.lastPricePaid,
+                    lastPricePerStandardUnit: item.lastPricePerStandardUnit,
+                    baseUnit: item.baseUnit
+                  };
+                  lastInfo.textContent = `Last: ${item.lastQuantity}${item.lastUnit} • ₹${item.lastPricePaid} on ${item.lastDate}`;
+                  // optionally prefill qty to last quantity or keep current; here we keep current
+                  updateEstimate();
+                  autoList.innerHTML = '';
+                  autoList.classList.add('hidden');
+                });
+                autoList.appendChild(el);
+              });
+              autoList.classList.remove('hidden');
+            })
+            .catch(err=>{
+              console.error('search err', err);
+            });
+        }, 250);
+      });
+
+      // hide on blur slightly delayed to allow click
+      particular.addEventListener('blur', ()=> setTimeout(()=> autoList.classList.add('hidden'),200));
+
+      // when user changes qty/unit/price run estimate
+      [qty, unit, pricePaid].forEach(el => el.addEventListener('input', updateEstimate));
+
+      // quick fetch last when focus out (optional)
+      particular.addEventListener('change', ()=>{
+        const name = particular.value.trim();
+        if (!name) return;
+        fetch(API_BASE + '?action=last&item=' + encodeURIComponent(name))
+          .then(r=>r.json())
+          .then(data=>{
+            if (data) {
+              lastFetched = data;
+              lastInfo.textContent = `Last: ${data.lastQuantity}${data.lastUnit} • ₹${data.lastPricePaid} on ${data.lastDate}`;
+              updateEstimate();
+            } else {
+              lastInfo.textContent = 'Last: -';
+            }
+          })
+          .catch(()=>{ lastInfo.textContent = 'Last: -'; });
+      });
+
+      removeBtn.addEventListener('click', ()=> {
+        row.remove();
+        updateTotal();
+      });
+
+      // initial estimate
+      setTimeout(updateEstimate, 50);
+
+      itemsContainer.appendChild(clone);
+    }
+
+    function addItem() { createItemRow(); scrollToBottom(); }
+    function scrollToBottom(){ window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'}); }
+
+    addItemBtn.addEventListener('click', (e)=>{
+      e.preventDefault();
+      addItem();
+    });
+
+    // add initial row
+    addItem();
+
+    function collectItems() {
+      const rows = Array.from(document.querySelectorAll('.item-row'));
+      return rows.map(row=>{
+        const particular = row.querySelector('.particular').value.trim();
+        const quantity = parseFloat(row.querySelector('.qty').value) || 0;
+        const unit = row.querySelector('.unit').value || '';
+        const pricePaid = row.querySelector('.pricePaid').value ? parseFloat(row.querySelector('.pricePaid').value) : null;
+        const notes = ''; // extend as needed
+        return {particular, quantity, unit, pricePaid, notes};
+      }).filter(it => it.particular && (it.quantity || it.pricePaid)); // require name + qty/price
+    }
+
+    function updateTotal() {
+      const rows = Array.from(document.querySelectorAll('.item-row'));
+      let total = 0;
+      rows.forEach(row=>{
+        const estText = row.querySelector('.estimated').textContent || '';
+        const m = estText.match(/₹(\d+)/);
+        if (m) total += parseFloat(m[1]);
+      });
+      estimatedTotalEl.textContent = '₹' + Math.round(total);
+    }
+
+    saveBtn.addEventListener('click', ()=>{
+      const items = collectItems();
+      if (!items.length) {
+        showMsg('Add at least one item with name and qty/price', true);
+        return;
+      }
+      const payload = {
+        date: dateInput.value,
+        shop: shopInput.value || '',
+        items: items.map(it => ({
+          particular: it.particular,
+          quantity: it.quantity,
+          unit: it.unit,
+          pricePaid: it.pricePaid || 0
+        }))
+      };
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+      fetch(API_BASE, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      }).then(r=>r.json()).then(data=>{
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save';
+        if (data && data.status === 'success') {
+          showMsg('Saved successfully ✅', false);
+          // clear rows and reset
+          document.querySelectorAll('.item-row').forEach(n=>n.remove());
+          addItem();
+          updateTotal();
+        } else {
+          showMsg('Save failed: ' + (data && data.error ? data.error : JSON.stringify(data)), true);
+        }
+      }).catch(err=>{
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save';
+        showMsg('Save error: ' + err.message, true);
+      });
+    });
+
+    function showMsg(text, isError){
+      msgEl.textContent = text;
+      msgEl.className = isError ? 'mt-3 text-sm text-red-400' : 'mt-3 text-sm text-green-400';
+      setTimeout(()=>{ msgEl.textContent = ''; }, 4000);
+    }
+  </script>
+</body>
+</html>
