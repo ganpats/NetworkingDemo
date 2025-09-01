@@ -85,7 +85,7 @@
   </template>
 
   <script>
-    const API_BASE = 'https://script.google.com/macros/s/AKfycbzUh4XlVMbvC9WlKfR-sP6UxDzbxaRCXxpgYfLioNc_RhA2lbrkf-hrcUsyIbTomst-vw/exec';
+    const API_BASE = 'https://script.google.com/macros/s/AKfycbzltb6Oyu7ZSYsX0FLXSD4sae1zU1ydvgXjcD6lp921D8QFiYtIU5oO8vWN3ATjf5KYAw/exec';
 
     // --- Utilities for unit normalization & conversion
     function toStandard(quantity, unit) {
@@ -272,6 +272,16 @@
     }
 
     saveBtn.addEventListener('click', ()=>{
+        // Example usage
+        saveExpense({
+        date: "2025-08-31",
+        amount: 300,
+        particular: "Peanuts 500g",
+        shop: "Dilip Stores"
+        });
+        return;
+        //
+
       const items = collectItems();
       if (!items.length) {
         showMsg('Add at least one item with name and qty/price', true);
@@ -316,6 +326,25 @@
       msgEl.textContent = text;
       msgEl.className = isError ? 'mt-3 text-sm text-red-400' : 'mt-3 text-sm text-green-400';
       setTimeout(()=>{ msgEl.textContent = ''; }, 4000);
+    }
+
+    async function fetchItems(query) {
+        const res = await fetch(`${API_BASE}?action=search&q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        console.log(data);
+        return data;
+        }
+
+        // POST expense
+        async function saveExpense(expense) {
+        const res = await fetch(API_BASE, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(expense),
+        });
+        const data = await res.json();
+        console.log(data);
+        return data;
     }
   </script>
 </body>
