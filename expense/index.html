@@ -339,6 +339,7 @@
         async function saveExpense(expense) {
         const res = await fetch(API_BASE, {
             method: "POST",
+            mode: 'cors',
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(expense),
         });
