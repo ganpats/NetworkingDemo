@@ -67,6 +67,10 @@ async function loadNextPageStories() {
 
     currentPageIndex++;
     isLoading = false;
+
+    if (document.body.scrollHeight <= window.innerHeight) {
+      loadNextPageStories(currentPageIndex);
+    }
   } catch (err) {
     console.error(err);
     loader.textContent = "Failed to load this page.";
