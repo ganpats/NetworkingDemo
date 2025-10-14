@@ -7,8 +7,13 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header>
+  <header class="top-header">
     <h1>📰 Local News</h1>
+    <div class="search-container">
+      <button id="search-toggle" aria-label="Open search">🔍</button>
+      <input id="search-input" type="search" placeholder="Search stories..." aria-label="Search stories" />
+      <button id="search-clear" aria-label="Clear search" title="Clear">✖</button>
+    </div>
   </header>
   <main id="story-list">
     <p class="loading">Loading stories...</p>

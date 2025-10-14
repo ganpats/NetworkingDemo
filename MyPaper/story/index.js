@@ -1,6 +1,11 @@
 let pages = [];
 let currentPageIndex = 0;
 let isLoading = false;
+let allPagesFetchedForSearch = false;
+
+const searchToggle = document.getElementById("search-toggle");
+const searchInput = document.getElementById("search-input");
+const searchClear = document.getElementById("search-clear");
 
 const storyList = document.getElementById("story-list");
 
@@ -76,6 +81,110 @@ async function loadNextPageStories() {
     loader.textContent = "Failed to load this page.";
     isLoading = false;
   }
+}
+
+// Helper: render a single story card (used by search results too)
+function createStoryCard(story) {
+  const card = document.createElement("div");
+  card.className = "card";
+  card.dataset.title = (story.storyTitle || "").toLowerCase();
+  const contentText = (story.Content || story.Summary || "").toString();
+  card.dataset.content = contentText.toLowerCase();
+  card.innerHTML = `
+    <img src="${story.LinkPicture}" alt="${story.storyTitle}" />
+    <div class="card-content">
+      <h2>${story.storyTitle}</h2>
+      <p>${contentText}</p>
+    </div>
+  `;
+  card.addEventListener("click", () => {
+    window.location.href = `story.html?OrgId=${story.OrgId}`;
+  });
+  return card;
+}
+
+// Ensure all remaining pages are fetched (used for search when not fully loaded)
+async function fetchAllRemainingPages() {
+  if (allPagesFetchedForSearch) return;
+  while (currentPageIndex < pages.length) {
+    try {
+      isLoading = true;
+      const page = pages[currentPageIndex];
+      const res = await fetch(
+        `https://epaper.patrika.com/Home/getStoriesOnPage?pageid=${page.PageId}`
+      );
+      const stories = await res.json();
+      stories.forEach((s) => {
+        const card = createStoryCard(s);
+        storyList.appendChild(card);
+      });
+      currentPageIndex++;
+    } catch (err) {
+      console.error('Error fetching page during full fetch', err);
+      break;
+    } finally {
+      isLoading = false;
+    }
+  }
+  allPagesFetchedForSearch = true;
+}
+
+// Search/filter displayed cards by query
+function filterStories(query) {
+  const q = (query || "").trim().toLowerCase();
+  const cards = Array.from(storyList.querySelectorAll('.card'));
+  if (!q) {
+    // show all cards
+    cards.forEach(c => (c.style.display = ''));
+    return;
+  }
+  cards.forEach((c) => {
+    const title = c.dataset.title || '';
+    const content = c.dataset.content || '';
+    if (title.includes(q) || content.includes(q)) {
+      c.style.display = '';
+    } else {
+      c.style.display = 'none';
+    }
+  });
+}
+
+// UI: open/close search input
+if (searchToggle && searchInput && searchClear) {
+  searchToggle.addEventListener('click', async () => {
+    const isOpen = searchInput.classList.toggle('open');
+    if (isOpen) {
+      searchInput.focus();
+    } else {
+      searchInput.value = '';
+      filterStories('');
+    }
+  });
+
+  searchClear.addEventListener('click', (e) => {
+    e.stopPropagation();
+    searchInput.value = '';
+    searchInput.classList.remove('open');
+    filterStories('');
+  });
+
+  let searchTimeout = null;
+  searchInput.addEventListener('input', async (e) => {
+    const q = e.target.value;
+    // Debounce
+    if (searchTimeout) clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(async () => {
+      if (!q) {
+        filterStories('');
+        return;
+      }
+      // If not all pages fetched, fetch them so search covers whole set
+      if (!allPagesFetchedForSearch && currentPageIndex < pages.length) {
+        await fetchAllRemainingPages();
+      }
+      filterStories(q);
+    }, 250);
+  });
 }
 
 // Infinite scroll
