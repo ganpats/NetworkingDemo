@@ -46,6 +46,12 @@ async function loadNextPageStories() {
   loader.textContent = `Loading Page ${page.PageNo} stories...`;
   storyList.appendChild(loader);
 
+  const ignoreTexts = [
+    "८ राज्य,  ३८ संस्करण",
+    "य एषु सुप्तेषु जागर्ति",
+    "क्क संवत्सर का नाम"
+  ].map(t => t.trim());
+
   try {
     const res = await fetch(
       `https://epaper.patrika.com/Home/getStoriesOnPage?pageid=${page.PageId}`
@@ -54,7 +60,27 @@ async function loadNextPageStories() {
 
     loader.remove();
 
-    stories.forEach((story) => {
+    // ✅ Skip entire page if it has only one story
+    if (stories.length <= 1) {
+      console.log(`Skipping Page ${page.PageNo} (only one story)`);
+      currentPageIndex++;
+      isLoading = false;
+      loadNextPageStories(); // load next automatically
+      return;
+    }
+
+    // ✅ Filter out unwanted stories based on ignoreTexts
+    const filteredStories = stories.filter(story => {
+      const title = (story.storyTitle || "").trim();
+      const content = (story.Content || story.Summary || "").trim();
+
+      return !ignoreTexts.some(ignoreText =>
+        title.includes(ignoreText) || content.includes(ignoreText)
+      );
+    });
+
+    // ✅ Append only filtered stories
+    filteredStories.forEach((story) => {
       const card = document.createElement("div");
       card.className = "card";
       card.innerHTML = `
@@ -73,8 +99,9 @@ async function loadNextPageStories() {
     currentPageIndex++;
     isLoading = false;
 
+    // Load next page if viewport still empty
     if (document.body.scrollHeight <= window.innerHeight) {
-      loadNextPageStories(currentPageIndex);
+      loadNextPageStories();
     }
   } catch (err) {
     console.error(err);
