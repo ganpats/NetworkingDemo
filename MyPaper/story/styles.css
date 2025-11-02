@@ -22,6 +22,15 @@ header h1 {
   color: #ff5252;
 }
 
+.top-header {
+  background: #1e1e1e;
+  padding: 10px 16px;
+  border-bottom: 1px solid #333;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .search-container {
   display: flex;
   align-items: center;
@@ -50,6 +59,18 @@ header h1 {
 .search-container input.open {
   width: 220px;
   opacity: 1;
+}
+
+.read-btn {
+  font-size: 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.read-btn:hover {
+  transform: scale(1.1);
 }
 
 #back-btn {
@@ -103,6 +124,7 @@ header h1 {
   transition: transform 0.2s, box-shadow 0.2s;
   display: flex;
   flex-direction: column;
+  border: 1px solid #ffffff;
 }
 .card:hover {
   transform: translateY(-4px);
@@ -158,4 +180,29 @@ header h1 {
   padding: 20px;
   color: #888;
   grid-column: 1 / -1; /* span full width in grid */
+}
+
+#search-input {
+  display: none;
+  transition: all 0.3s ease;
+}
+
+#search-input.open {
+  display: inline-block;
+}
+
+#search-clear {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+#search-input.open + #search-clear {
+  display: inline-block;
+}
+
+#search-clear.visible {
+  display: inline-block;
 }
