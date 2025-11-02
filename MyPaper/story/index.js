@@ -226,63 +226,97 @@ window.addEventListener("scroll", () => {
 
 init();
 
+const readBtn = document.getElementById('read-aloud-btn');
 let isReading = false;
-let currentStoryIndex = 0;
-let storyCards = [];
+let currentIndex = 0;
+let audio = null;
+
+function splitText(text) {
+  const chunks = [];
+  let remaining = text.trim();
+  while (remaining.length > 0) {
+    chunks.push(remaining.slice(0, 180)); // < 200 char
+    remaining = remaining.slice(180);
+  }
+  return chunks;
+}
+
+async function playStory(index) {
+  const stories = Array.from(document.querySelectorAll('#story-list .card-content'));
+  if (index >= stories.length) {
+    stopReading();
+    return;
+  }
+
+  const text = stories[index].innerText.trim();
+  if (!text) {
+    currentIndex++;
+    playStory(currentIndex);
+    return;
+  }
+
+  // Highlight and scroll into view
+  stories[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
+  stories[index].style.background = '#333333';
+
+  // Split long text
+  const chunks = splitText(text);
+
+  let chunkIndex = 0;
+
+  const playNextChunk = () => {
+    if (chunkIndex >= chunks.length) {
+      stories[index].style.background = '';
+      currentIndex++;
+      playStory(currentIndex);
+      return;
+    }
+
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=hi&client=tw-ob&q=${encodeURIComponent(
+      chunks[chunkIndex]
+    )}`;
+    audio = new Audio(url);
+
+    audio.onended = () => {
+      chunkIndex++;
+      playNextChunk();
+    };
+
+    audio.onerror = (e) => {
+      console.error('TTS error:', e);
+      chunkIndex++;
+      playNextChunk();
+    };
+
+    audio.play().catch((err) => {
+      console.error('Play failed:', err);
+      chunkIndex++;
+      playNextChunk();
+    });
+  };
+
+  playNextChunk();
+}
 
 function startReading() {
   if (isReading) return;
-  storyCards = Array.from(document.querySelectorAll("#story-list .card"));
-  if (storyCards.length === 0) {
-    alert("No stories to read.");
-    return;
-  }
-
   isReading = true;
-  readAloudBtn.textContent = "⏸️";
-  currentStoryIndex = 0;
-  readNextStory();
-}
-
-function readNextStory() {
-  if (!isReading || currentStoryIndex >= storyCards.length) {
-    stopReading();
-    alert("✅ Finished reading all stories!");
-    return;
-  }
-
-  const card = storyCards[currentStoryIndex];
-  const title = card.querySelector("h2")?.innerText || "";
-  const content = card.querySelector("p")?.innerText || "";
-
-  card.scrollIntoView({ behavior: "smooth", block: "center" });
-
-  const textToRead = `${title}. ${content}`;
-  const utterance = new SpeechSynthesisUtterance(textToRead);
-  utterance.lang = "hi-IN"; // Hindi
-  utterance.rate = 0.95;
-
-  utterance.onend = () => {
-    currentStoryIndex++;
-    setTimeout(readNextStory, 800);
-  };
-
-  window.speechSynthesis.speak(utterance);
+  readBtn.textContent = '⏸️';
+  currentIndex = 0;
+  playStory(currentIndex);
 }
 
 function stopReading() {
-  window.speechSynthesis.cancel();
+  if (!isReading) return;
   isReading = false;
-  readAloudBtn.textContent = "▶️";
+  readBtn.textContent = '▶️';
+  if (audio) {
+    audio.pause();
+    audio = null;
+  }
 }
 
-const readAloudBtn = document.getElementById("read-aloud-btn");
-if (readAloudBtn) {
-  readAloudBtn.addEventListener("click", () => {
-    if (!isReading) {
-      startReading();
-    } else {
-      stopReading();
-    }
-  });
-}
+readBtn.addEventListener('click', () => {
+  if (isReading) stopReading();
+  else startReading();
+});
