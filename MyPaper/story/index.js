@@ -225,3 +225,64 @@ window.addEventListener("scroll", () => {
 });
 
 init();
+
+let isReading = false;
+let currentStoryIndex = 0;
+let storyCards = [];
+
+function startReading() {
+  if (isReading) return;
+  storyCards = Array.from(document.querySelectorAll("#story-list .card"));
+  if (storyCards.length === 0) {
+    alert("No stories to read.");
+    return;
+  }
+
+  isReading = true;
+  readAloudBtn.textContent = "⏸️";
+  currentStoryIndex = 0;
+  readNextStory();
+}
+
+function readNextStory() {
+  if (!isReading || currentStoryIndex >= storyCards.length) {
+    stopReading();
+    alert("✅ Finished reading all stories!");
+    return;
+  }
+
+  const card = storyCards[currentStoryIndex];
+  const title = card.querySelector("h2")?.innerText || "";
+  const content = card.querySelector("p")?.innerText || "";
+
+  card.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  const textToRead = `${title}. ${content}`;
+  const utterance = new SpeechSynthesisUtterance(textToRead);
+  utterance.lang = "hi-IN"; // Hindi
+  utterance.rate = 0.95;
+
+  utterance.onend = () => {
+    currentStoryIndex++;
+    setTimeout(readNextStory, 800);
+  };
+
+  window.speechSynthesis.speak(utterance);
+}
+
+function stopReading() {
+  window.speechSynthesis.cancel();
+  isReading = false;
+  readAloudBtn.textContent = "▶️";
+}
+
+const readAloudBtn = document.getElementById("read-aloud-btn");
+if (readAloudBtn) {
+  readAloudBtn.addEventListener("click", () => {
+    if (!isReading) {
+      startReading();
+    } else {
+      stopReading();
+    }
+  });
+}
