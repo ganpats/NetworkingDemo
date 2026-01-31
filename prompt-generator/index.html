@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architectural Prompt Wizard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>PlanPrompt AI</h1>
+            <p>Generate precise architectural prompts in seconds.</p>
+        </header>
+
+        <main class="wizard-card">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="step-indicator">Step <span id="currentStepNum">1</span> of 5</div>
+
+            <!-- Step 1: Dimensions & Plot -->
+            <div class="step active" id="step1">
+                <div class="step-content">
+                    <div class="step-image">
+                        <img src="assets/dimensions.png" alt="Plot Dimensions">
+                    </div>
+                    <div class="step-form">
+                        <h2>Plot Dimensions</h2>
+                        <p class="description">Define the size of your plot.</p>
+                        
+                        <div class="form-group">
+                            <label for="plotWidth">Width</label>
+                            <div class="input-with-unit">
+                                <input type="number" id="plotWidth" value="21" placeholder="e.g. 21">
+                                <span class="unit">FT</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="plotLength">Length</label>
+                            <div class="input-with-unit">
+                                <input type="number" id="plotLength" value="40" placeholder="e.g. 40">
+                                <span class="unit">FT</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Orientation -->
+            <div class="step" id="step2">
+                <div class="step-content">
+                    <div class="step-image">
+                        <img src="assets/orientation.png" alt="Orientation">
+                    </div>
+                    <div class="step-form">
+                        <h2>Orientation & Access</h2>
+                        <p class="description">Which direction does the road face?</p>
+                        
+                        <div class="form-group">
+                            <label>Road Direction</label>
+                            <div class="radio-grid">
+                                <label class="radio-card">
+                                    <input type="radio" name="roadDirection" value="East" checked>
+                                    <span>East</span>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="roadDirection" value="West">
+                                    <span>West</span>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="roadDirection" value="North">
+                                    <span>North</span>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="roadDirection" value="South">
+                                    <span>South</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <input type="checkbox" id="vastuCompliant" checked>
+                            <label for="vastuCompliant">Make fully Vastu Shastra compliant</label>
+                            <img src="assets/vastu.png" class="mini-icon" alt="Vastu">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Layout Zones -->
+            <div class="step" id="step3">
+                <div class="step-content">
+                    <div class="step-image">
+                        <img src="assets/layout.png" alt="Layout Zones">
+                    </div>
+                    <div class="step-form">
+                        <h2>Key Zones</h2>
+                        <p class="description">Configure primary room locations.</p>
+                        
+                        <div class="form-group">
+                            <label for="parkingLoc">Car Parking Zone</label>
+                            <select id="parkingLoc">
+                                <option value="Northeast">Northeast (Recommended)</option>
+                                <option value="Southeast">Southeast</option>
+                                <option value="Southwest">Southwest</option>
+                                <option value="Northwest">Northwest</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="kitchenLoc">Kitchen Location</label>
+                            <select id="kitchenLoc">
+                                <option value="Southeast">Southeast (Agni Corner)</option>
+                                <option value="Northwest">Northwest</option>
+                                <option value="Northeast">Northeast</option>
+                                <option value="Southwest">Southwest</option>
+                            </select>
+                        </div>
+
+                         <div class="form-group">
+                            <label for="bedroomLoc">Master Bedroom</label>
+                            <select id="bedroomLoc">
+                                <option value="Southwest">Southwest (Stability)</option>
+                                <option value="Northwest">Northwest</option>
+                                <option value="Southeast">Southeast</option>
+                                <option value="Northeast">Northeast</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Details -->
+            <div class="step" id="step4">
+                <div class="step-content">
+                    <div class="step-image">
+                        <img src="assets/stairs.png" alt="Details">
+                    </div>
+                    <div class="step-form">
+                        <h2>Details & Stairs</h2>
+                        <p class="description">Add specific architectural details.</p>
+                        
+                        <div class="form-group">
+                            <label for="staircaseLoc">Staircase Location</label>
+                            <select id="staircaseLoc">
+                                <option value="South wall">South Wall</option>
+                                <option value="West wall">West Wall</option>
+                                <option value="North wall">North Wall</option>
+                                <option value="East wall">East Wall</option>
+                                <option value="Center">Center</option>
+                            </select>
+                        </div>
+                         <div class="form-group">
+                            <label for="bathLoc">Bathrooms/Toilets</label>
+                            <select id="bathLoc">
+                                <option value="Northwest">Northwest Zone</option>
+                                <option value="Southeast">Southeast Zone</option>
+                                <option value="Attached">Attached to Bedrooms</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+             <!-- Step 5: Review & Generate -->
+             <div class="step" id="step5">
+                <div class="step-content column-layout">
+                    <h2>Ready to Create?</h2>
+                    <p class="description">Review your configuration and generate the prompt.</p>
+                    
+                    <div class="summary-box">
+                        <ul id="summaryList">
+                            <!-- Populated by JS -->
+                        </ul>
+                    </div>
+
+                    <div class="result-area hidden" id="resultArea">
+                        <label>Your AI Prompt</label>
+                        <textarea id="finalPrompt" readonly></textarea>
+                        <button class="secondary-btn small" id="copyBtn">Copy to Clipboard</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="wizard-footer">
+                <button id="prevBtn" class="nav-btn secondary" disabled>Back</button>
+                <button id="nextBtn" class="nav-btn primary">Next Step</button>
+                <button id="generateBtn" class="nav-btn primary hidden">Generate Prompt</button>
+            </div>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
