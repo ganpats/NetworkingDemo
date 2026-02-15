@@ -288,16 +288,6 @@
     }
 
     saveBtn.addEventListener('click', () => {
-      // Example usage
-      saveExpense({
-        date: "2025-08-31",
-        amount: 300,
-        particular: "Peanuts 500g",
-        shop: "Dilip Stores"
-      });
-      return;
-      //
-
       const items = collectItems();
       if (!items.length) {
         showMsg('Add at least one item with name and qty/price', true);
