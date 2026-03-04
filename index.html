@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NetworkingDemo Dashboard</title>
+  <style>
+    :root {
+      --bg-top: #081a24;
+      --bg-mid: #0e2c33;
+      --bg-bottom: #f4efe7;
+      --card: rgba(255, 255, 255, 0.9);
+      --text: #0f2b3a;
+      --muted: #587180;
+      --accent: #e97939;
+      --accent-2: #1c9ab7;
+      --shadow: 0 14px 35px rgba(4, 25, 34, 0.18);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1000px 500px at 90% -10%, rgba(28, 154, 183, 0.25), transparent 70%),
+        radial-gradient(800px 400px at -10% 15%, rgba(233, 121, 57, 0.3), transparent 70%),
+        linear-gradient(165deg, var(--bg-top) 0%, var(--bg-mid) 32%, var(--bg-bottom) 100%);
+      padding: 40px 20px 60px;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .hero {
+      margin-bottom: 24px;
+      color: #eef8fb;
+      animation: fadeDown 600ms ease-out;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3rem);
+      letter-spacing: 0.02em;
+      text-wrap: balance;
+    }
+
+    .hero p {
+      margin: 8px 0 0;
+      max-width: 760px;
+      color: rgba(238, 248, 251, 0.88);
+      font-size: 1.05rem;
+      line-height: 1.55;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      display: flex;
+      flex-direction: column;
+      min-height: 260px;
+      text-decoration: none;
+      color: inherit;
+      background: var(--card);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(15, 43, 58, 0.09);
+      transform: translateY(0);
+      transition: transform 180ms ease, box-shadow 180ms ease;
+      animation: riseIn 520ms ease both;
+    }
+
+    .card:hover,
+    .card:focus-visible {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 42px rgba(7, 33, 44, 0.24);
+      outline: none;
+    }
+
+    .thumb {
+      height: 146px;
+      background: linear-gradient(145deg, #d8eef2 0%, #fbf7f0 100%);
+      display: grid;
+      place-items: center;
+      border-bottom: 1px solid rgba(15, 43, 58, 0.07);
+      overflow: hidden;
+    }
+
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .fallback {
+      width: 68px;
+      height: 68px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(140deg, var(--accent), var(--accent-2));
+      box-shadow: 0 8px 20px rgba(28, 154, 183, 0.28);
+    }
+
+    .content {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 14px 14px 16px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 1.04rem;
+      line-height: 1.35;
+    }
+
+    .dir {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    .open {
+      margin-top: 3px;
+      font-size: 0.9rem;
+      color: var(--accent-2);
+      font-weight: 600;
+    }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes riseIn {
+      from { opacity: 0; transform: translateY(18px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <h1>NetworkingDemo Dashboard</h1>
+      <p>Open any project directly from this launcher. Each card links to that folder's <code>index.html</code>.</p>
+    </section>
+
+    <section class="grid" id="dashboard"></section>
+  </main>
+
+  <script>
+    const grid = document.getElementById("dashboard");
+
+    const skipDirs = new Set([".", "..", ".git", "scripts", "node_modules"]);
+    const imageCandidates = [
+      "loading-logo.png",
+      "logo.png",
+      "icon-256.png",
+      "icon-128.png",
+      "icon-114.png",
+      "icon-64.png",
+      "icon-48.png",
+      "icon-32.png",
+      "icon-16.png",
+      "images/sitelogo-sheet0.png",
+      "images/sitelogo2-sheet0.png",
+      "assets/vastu.png",
+      "assets/dimensions.jpeg",
+      "assets/layout.png",
+      "assets/orientation.png"
+    ];
+
+    function initialsFrom(name) {
+      return name
+        .replace(/[_-]+/g, " ")
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(function (s) { return s[0].toUpperCase(); })
+        .join("");
+    }
+
+    function unique(values) {
+      return Array.from(new Set(values));
+    }
+
+    function tryLoadImage(url) {
+      return new Promise(function (resolve) {
+        var img = new Image();
+        img.onload = function () { resolve(true); };
+        img.onerror = function () { resolve(false); };
+        img.src = url;
+      });
+    }
+
+    async function findImage(dir) {
+      for (const rel of imageCandidates) {
+        const url = dir + "/" + rel;
+        if (await tryLoadImage(url)) return url;
+      }
+      return "";
+    }
+
+    function parseDirsFromListing(html) {
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const links = Array.from(doc.querySelectorAll("a[href]"));
+      return unique(
+        links
+          .map(function (a) { return a.getAttribute("href") || ""; })
+          .filter(function (href) {
+            return href.endsWith("/") && !href.startsWith("?") && !href.startsWith("#");
+          })
+          .map(function (href) { return href.replace(/^\.?\//, "").replace(/\/$/, ""); })
+          .filter(function (dir) { return dir && !skipDirs.has(dir) && !dir.startsWith("."); })
+      );
+    }
+
+    async function loadProject(dir, fallbackTitle) {
+      const indexUrl = dir + "/index.html";
+      let title = fallbackTitle || dir;
+      const image = await findImage(dir);
+
+      try {
+        const res = await fetch(indexUrl, { cache: "no-store" });
+        if (res.ok) {
+          const html = await res.text();
+          const doc = new DOMParser().parseFromString(html, "text/html");
+          const remoteTitle = (doc.querySelector("title") && doc.querySelector("title").textContent || "").trim();
+          if (remoteTitle) title = remoteTitle;
+        }
+      } catch (_) {
+        // Keep fallback title/image when fetch is blocked (e.g., file:// mode).
+      }
+
+      return { dir: dir, title: title, image: image };
+    }
+
+    function renderCards(projects) {
+      grid.innerHTML = "";
+      projects.forEach(function (project, i) {
+        const card = document.createElement("a");
+        card.className = "card";
+        card.href = project.dir + "/index.html";
+        card.style.animationDelay = (i * 70) + "ms";
+
+        const thumb = document.createElement("div");
+        thumb.className = "thumb";
+
+        if (project.image) {
+          const img = document.createElement("img");
+          img.src = project.image;
+          img.alt = project.title + " logo";
+          img.loading = "lazy";
+          thumb.appendChild(img);
+        } else {
+          const fallback = document.createElement("div");
+          fallback.className = "fallback";
+          fallback.textContent = initialsFrom(project.dir);
+          thumb.appendChild(fallback);
+        }
+
+        const content = document.createElement("div");
+        content.className = "content";
+        content.innerHTML =
+          "<h2 class=\"title\">" + project.title + "</h2>" +
+          "<p class=\"dir\">" + project.dir + "</p>" +
+          "<span class=\"open\">Open app -></span>";
+
+        card.append(thumb, content);
+        grid.appendChild(card);
+      });
+    }
+
+    async function bootstrapDashboard() {
+      grid.innerHTML = "<p class=\"dir\">Loading projects...</p>";
+
+      let dirs = [];
+      try {
+        const listing = await fetch("./", { cache: "no-store" });
+        if (listing.ok) {
+          dirs = parseDirsFromListing(await listing.text());
+        }
+      } catch (_) {}
+
+      const fallbackProjects = [
+        { dir: "MyPaper", title: "MyPaper" },
+        { dir: "expense", title: "Expense Quick Add" },
+        { dir: "g001_TruckTravel", title: "Truck Travel" },
+        { dir: "g002_MushroomFall", title: "Mushroom Fall" },
+        { dir: "prompt-generator", title: "Architectural Prompt Wizard" }
+      ];
+
+      const sources = dirs.length
+        ? dirs.map(function (dir) {
+            const match = fallbackProjects.find(function (p) { return p.dir === dir; });
+            return { dir: dir, title: match ? match.title : dir };
+          })
+        : fallbackProjects;
+
+      const projects = (await Promise.all(sources.map(function (p) { return loadProject(p.dir, p.title); })))
+        .sort(function (a, b) { return a.dir.localeCompare(b.dir); });
+
+      if (!projects.length) {
+        grid.innerHTML = "<p class=\"dir\">No projects configured.</p>";
+        return;
+      }
+
+      renderCards(projects);
+    }
+
+    window.addEventListener("DOMContentLoaded", bootstrapDashboard);
+  </script>
+</body>
+</html>
