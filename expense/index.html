@@ -293,8 +293,9 @@
         showMsg('Add at least one item with name and qty/price', true);
         return;
       }
+      const [y, m, d] = dateInput.value.split('-');
       const payload = {
-        date: dateInput.value,
+        date: `${d}/${m}/${y}`,
         shop: shopInput.value || '',
         items: items.map(it => ({
           particular: it.particular,
@@ -307,7 +308,7 @@
       saveBtn.textContent = 'Saving...';
       fetch(API_BASE, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(payload)
       }).then(r => r.json()).then(data => {
         saveBtn.disabled = false;
