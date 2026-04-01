@@ -22,6 +22,23 @@ function toStandardUnit(quantity, unit) {
   return {value: q, base: unit || 'each'};
 }
 
+/**
+ * Helper to parse dates from sheet cells (could be Date object or DD/MM/YYYY string)
+ */
+function parseDateString(dateStr) {
+  if (dateStr instanceof Date) return dateStr;
+  if (!dateStr) return null;
+  const parts = dateStr.toString().split('/');
+  if (parts.length === 3) {
+    // DD/MM/YYYY
+    const d = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10) - 1;
+    const y = parseInt(parts[2], 10);
+    return new Date(y, m, d);
+  }
+  return new Date(dateStr);
+}
+
 function calcPricePerStandardUnit(quantity, unit, price) {
   const raw = toStandardUnit(quantity, unit);
   let priceNum = parseFloat(price) || 0;
@@ -48,9 +65,9 @@ function doGet(e) {
       return sendJSON(result);
     } 
     else {
-      // Default: return all items from FY2025-26 sheet
+      // Default: return all items from Transactions sheet
       const ss = getSpreadsheet();
-      const sheet = ss.getSheetByName("FY2025-26");
+      const sheet = ss.getSheetByName(TRANSACTIONS_SHEET);
       const data = sheet.getRange(1, 1, sheet.getLastRow(), 4).getValues();
 
       const itemsMap = {};
@@ -85,7 +102,7 @@ function doPost(e) {
     }
 
     const ss = getSpreadsheet();
-    const transactionSheet = ss.getSheetByName("FY2025-26");
+    const transactionSheet = ss.getSheetByName(TRANSACTIONS_SHEET);
     const catalogSheet = ss.getSheetByName(CATALOG_SHEET);
 
     // Process each item
@@ -93,7 +110,7 @@ function doPost(e) {
       const { particular, quantity, unit, pricePaid } = item;
       const amount = pricePaid || 0;
 
-      // 1. Save to transactions sheet (FY2025-26)
+      // 1. Save to transactions sheet (Transactions)
       transactionSheet.appendRow([date, amount, particular, shop]);
 
       // 2. Update catalog with latest purchase info
@@ -123,7 +140,12 @@ function doPost(e) {
  * Note: Google Apps Script automatically adds CORS headers when deployed with "Anyone" access
  */
 function sendJSON(obj) {
-  const output = JSON.stringify(obj);
+  const output = JSON.stringify(obj, function(key, value) {
+    if (this[key] instanceof Date) {
+      return Utilities.formatDate(this[key], Session.getScriptTimeZone(), "dd/MM/yyyy");
+    }
+    return value;
+  });
   return ContentService
     .createTextOutput(output)
     .setMimeType(ContentService.MimeType.JSON);
@@ -258,8 +280,10 @@ function populateCatalogFromSheet(sheetName, qtyColumnIndex, unitColumnIndex) {
     const unit = unitColumnIndex !== undefined ? row[unitColumnIndex] : 'each';
     
     // Keep the latest entry for each item (assumes sheet is sorted by date)
-    // If you want to find actual latest, compare dates
-    if (!itemMap[itemKey] || new Date(date) > new Date(itemMap[itemKey].date)) {
+    const rowDate = parseDateString(date);
+    const existingDate = itemMap[itemKey] ? parseDateString(itemMap[itemKey].date) : null;
+    
+    if (!itemMap[itemKey] || (rowDate && existingDate && rowDate > existingDate)) {
       itemMap[itemKey] = {
         date: date,
         amount: amount,
@@ -313,12 +337,12 @@ function populateCatalogFromMultipleSheets(sheetNames) {
 }
 
 /**
- * 🔧 EXAMPLE: Run this to populate catalog from FY2025-26
+ * 🔧 EXAMPLE: Run this to populate catalog from Transactions
  * 
  * Click the "Run" button in the Apps Script editor with this function selected
  */
 function examplePopulateCatalog() {
-  populateCatalogFromSheet("FY2025-26");
+  populateCatalogFromSheet(TRANSACTIONS_SHEET);
 }
 
 /**
@@ -326,7 +350,7 @@ function examplePopulateCatalog() {
  */
 function examplePopulateCatalogMultipleYears() {
   populateCatalogFromMultipleSheets([
-    "FY2025-26",
+    TRANSACTIONS_SHEET,
     "FY2024-25",
     "FY2023-24"
   ]);
