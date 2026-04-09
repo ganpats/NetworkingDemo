@@ -105,26 +105,39 @@ function doPost(e) {
     const transactionSheet = ss.getSheetByName(TRANSACTIONS_SHEET);
     const catalogSheet = ss.getSheetByName(CATALOG_SHEET);
 
-    // Process each item
     items.forEach(item => {
-      const { particular, quantity, unit, pricePaid } = item;
+      const { particular, quantity, unit, pricePaid, notes } = item;
       const amount = pricePaid || 0;
+      const priceCalc = calcPricePerStandardUnit(quantity, unit, pricePaid);
+      const unitSizeText = quantity && unit ? (quantity + unit) : (quantity || unit || '');
 
       // 1. Save to transactions sheet (Transactions)
-      transactionSheet.appendRow([date, amount, particular, shop]);
+      // Fields: TransactionDate, Particular, Quantity, Unit, UnitSizeText, PricePaid, PricePerStandardUnit, ShopName, Notes
+      transactionSheet.appendRow([
+        date,
+        particular,
+        quantity,
+        unit,
+        unitSizeText,
+        amount,
+        priceCalc.pricePer,
+        shop,
+        notes
+      ]);
 
       // 2. Update catalog with latest purchase info
-      if (catalogSheet && quantity && pricePaid) {
-        const priceCalc = calcPricePerStandardUnit(quantity, unit, pricePaid);
+      if (catalogSheet) {
         upsertCatalogRow(
           catalogSheet,
           particular,
           date,
           quantity,
           unit,
-          pricePaid,
+          unitSizeText,
+          amount,
           priceCalc.pricePer,
-          priceCalc.base
+          priceCalc.base,
+          notes
         );
       }
     });
@@ -154,7 +167,7 @@ function sendJSON(obj) {
 /**
  * Upsert a row in the Catalog sheet
  */
-function upsertCatalogRow(sheet, particular, date, qty, unit, pricePaid, pricePerStd, base) {
+function upsertCatalogRow(sheet, particular, date, qty, unit, unitSizeText, pricePaid, pricePerStd, base, notes) {
   const range = sheet.getDataRange();
   const values = range.getValues();
   // find row with same particular (case-insensitive)
@@ -166,7 +179,8 @@ function upsertCatalogRow(sheet, particular, date, qty, unit, pricePaid, pricePe
       break;
     }
   }
-  const rowVals = [particular, date, qty, unit, pricePaid, pricePerStd, base];
+  // Order: Particular, Date, Qty, Unit, UnitSizeText, PricePaid, PricePerStd, Base, Notes
+  const rowVals = [particular, date, qty, unit, unitSizeText, pricePaid, pricePerStd, base, notes];
   if (foundRow) {
     sheet.getRange(foundRow,1,1,rowVals.length).setValues([rowVals]);
   } else {
@@ -193,9 +207,11 @@ function searchItems(q) {
         lastDate: values[r][1],
         lastQuantity: values[r][2],
         lastUnit: values[r][3],
-        lastPricePaid: values[r][4],
-        lastPricePerStandardUnit: values[r][5],
-        baseUnit: values[r][6]
+        unitSizeText: values[r][4],
+        lastPricePaid: values[r][5],
+        lastPricePerStandardUnit: values[r][6],
+        baseUnit: values[r][7],
+        lastNotes: values[r][8]
       });
     }
   }
@@ -219,9 +235,11 @@ function getLastForItem(item) {
         lastDate: values[r][1],
         lastQuantity: values[r][2],
         lastUnit: values[r][3],
-        lastPricePaid: values[r][4],
-        lastPricePerStandardUnit: values[r][5],
-        baseUnit: values[r][6]
+        unitSizeText: values[r][4],
+        lastPricePaid: values[r][5],
+        lastPricePerStandardUnit: values[r][6],
+        baseUnit: values[r][7],
+        lastNotes: values[r][8]
       };
     }
   }

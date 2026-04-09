@@ -92,6 +92,9 @@
           inputmode="decimal" />
       </div>
 
+      <input class="notes w-full p-2 rounded-md bg-slate-900 border border-slate-700 text-sm"
+        placeholder="Notes (optional)" />
+
       <div class="text-xs text-gray-400 flex justify-between">
         <div class="lastInfo">Last: -</div>
         <div class="estimated">Est: ₹0</div>
@@ -103,7 +106,7 @@
   </template>
 
   <script>
-    const API_BASE = 'https://script.google.com/macros/s/AKfycbw0N-1OEK-a1D_kwC5wmmDEtv2vgSTDKiPsbHjr9J42x93YGm2l7JW2cGoWoLOofcLqpQ/exec';
+    const API_BASE = 'https://script.google.com/macros/s/AKfycbw5TAG-39Iu1XQuN7UsMjU2enA4jVZjuNlsHrN16M8n8WZLBArS9mZrqfMppqqnKm1aig/exec';
 
     // --- Utilities for unit normalization & conversion
     function toStandard(quantity, unit) {
@@ -162,6 +165,7 @@
       qty.value = data.quantity || '';
       unit.value = data.unit || 'kg';
       pricePaid.value = data.pricePaid || '';
+      row.querySelector('.notes').value = data.notes || '';
 
       // helper: set estimated display
       let lastFetched = null;
@@ -175,6 +179,9 @@
         // update total
         updateTotal();
       }
+
+      // when user changes qty/unit/price/notes run estimate
+      [qty, unit, pricePaid].forEach(el => el.addEventListener('input', updateEstimate));
 
       // fetch suggestions
       let fetchTimer = null;
@@ -192,7 +199,7 @@
                 const el = document.createElement('div');
                 el.className = 'p-2 hover:bg-slate-700 cursor-pointer text-sm';
                 el.innerHTML = `<div class="font-medium">${item.particular}</div>
-                                <div class="text-xs text-gray-400">Last ${item.lastQuantity}${item.lastUnit} • ₹${item.lastPricePaid} on ${item.lastDate}</div>`;
+                                <div class="text-xs text-gray-400">Last ${item.unitSizeText || (item.lastQuantity + item.lastUnit)} • ₹${item.lastPricePaid} on ${item.lastDate}</div>`;
                 el.addEventListener('click', () => {
                   particular.value = item.particular;
                   // set last info
@@ -225,9 +232,6 @@
       particular.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') autoList.classList.add('hidden');
       });
-
-      // when user changes qty/unit/price run estimate
-      [qty, unit, pricePaid].forEach(el => el.addEventListener('input', updateEstimate));
 
       // quick fetch last when focus out (optional)
       particular.addEventListener('change', () => {
@@ -276,7 +280,7 @@
         const quantity = parseFloat(row.querySelector('.qty').value) || 0;
         const unit = row.querySelector('.unit').value || '';
         const pricePaid = row.querySelector('.pricePaid').value ? parseFloat(row.querySelector('.pricePaid').value) : null;
-        const notes = ''; // extend as needed
+        const notes = row.querySelector('.notes').value.trim();
         return { particular, quantity, unit, pricePaid, notes };
       }).filter(it => it.particular && (it.quantity || it.pricePaid)); // require name + qty/price
     }
@@ -306,7 +310,8 @@
           particular: it.particular,
           quantity: it.quantity,
           unit: it.unit,
-          pricePaid: it.pricePaid || 0
+          pricePaid: it.pricePaid || 0,
+          notes: it.notes
         }))
       };
       saveBtn.disabled = true;
