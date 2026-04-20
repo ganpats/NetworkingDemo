@@ -202,6 +202,10 @@
                                 <div class="text-xs text-gray-400">Last ${item.unitSizeText || (item.lastQuantity + item.lastUnit)} • ₹${item.lastPricePaid} on ${item.lastDate}</div>`;
                 el.addEventListener('click', () => {
                   particular.value = item.particular;
+                  // Fill unit and price from last purchase
+                  unit.value = item.lastUnit || 'each';
+                  pricePaid.value = item.lastPricePaid || '';
+                  
                   // set last info
                   lastFetched = {
                     lastDate: item.lastDate,
@@ -243,6 +247,11 @@
             if (data) {
               lastFetched = data;
               lastInfo.textContent = `Last: ${data.lastQuantity}${data.lastUnit} • ₹${data.lastPricePaid} on ${data.lastDate}`;
+              
+              // Fill unit and price if empty or on focus out match
+              if (!unit.value || unit.value === 'each') unit.value = data.lastUnit || 'each';
+              if (!pricePaid.value) pricePaid.value = data.lastPricePaid || '';
+              
               updateEstimate();
             } else {
               lastInfo.textContent = 'Last: -';
