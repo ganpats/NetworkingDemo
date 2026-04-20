@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -18,7 +19,9 @@
       --radius: 18px;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
@@ -144,16 +147,31 @@
     }
 
     @keyframes fadeDown {
-      from { opacity: 0; transform: translateY(-14px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(-14px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     @keyframes riseIn {
-      from { opacity: 0; transform: translateY(18px) scale(0.98); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
+      from {
+        opacity: 0;
+        transform: translateY(18px) scale(0.98);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
     }
   </style>
 </head>
+
 <body>
   <main class="wrap">
     <section class="hero">
@@ -296,21 +314,22 @@
         if (listing.ok) {
           dirs = parseDirsFromListing(await listing.text());
         }
-      } catch (_) {}
+      } catch (_) { }
 
       const fallbackProjects = [
         { dir: "MyPaper", title: "MyPaper" },
         { dir: "expense", title: "Expense Quick Add" },
         { dir: "g001_TruckTravel", title: "Truck Travel" },
         { dir: "g002_MushroomFall", title: "Mushroom Fall" },
+        { dir: "pad", title: "Pad Calculator" },
         { dir: "prompt-generator", title: "Architectural Prompt Wizard" }
       ];
 
       const sources = dirs.length
         ? dirs.map(function (dir) {
-            const match = fallbackProjects.find(function (p) { return p.dir === dir; });
-            return { dir: dir, title: match ? match.title : dir };
-          })
+          const match = fallbackProjects.find(function (p) { return p.dir === dir; });
+          return { dir: dir, title: match ? match.title : dir };
+        })
         : fallbackProjects;
 
       const projects = (await Promise.all(sources.map(function (p) { return loadProject(p.dir, p.title); })))
@@ -327,4 +346,5 @@
     window.addEventListener("DOMContentLoaded", bootstrapDashboard);
   </script>
 </body>
+
 </html>
