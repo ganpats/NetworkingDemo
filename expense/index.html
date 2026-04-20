@@ -163,7 +163,7 @@
 
       particular.value = data.particular || '';
       qty.value = data.quantity || '';
-      unit.value = data.unit || 'kg';
+      unit.value = data.unit || 'each';
       pricePaid.value = data.pricePaid || '';
       row.querySelector('.notes').value = data.notes || '';
 
@@ -325,7 +325,8 @@
         saveBtn.textContent = 'Save';
         if (data && data.status === 'success') {
           showMsg('Saved successfully ✅', false);
-          // clear rows and reset
+          // clear shop and rows
+          shopInput.value = '';
           document.querySelectorAll('.item-row').forEach(n => n.remove());
           addItem();
           updateTotal();
