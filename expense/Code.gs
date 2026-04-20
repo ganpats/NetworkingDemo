@@ -17,7 +17,8 @@ function toStandardUnit(quantity, unit) {
   if (unit === 'l' || unit === 'litre' || unit === 'liter') return {value: q * 1000, base: 'ml'};
   if (unit === 'ml' || unit === 'milliliter' || unit === 'millilitre') return {value: q, base: 'ml'};
   // pieces / each -> leave as 'each' base
-  if (unit === 'each' || unit === 'pc' || unit === 'pcs' || unit === 'piece' || unit === 'pieces') return {value: q, base: 'each'};
+  const eachUnits = ['each', 'pc', 'pcs', 'piece', 'pieces', 'packet', 'pkt', 'box', 'bottle', 'can', 'unit', 'units'];
+  if (eachUnits.includes(unit)) return {value: q, base: 'each'};
   // fallback: treat as 'each'
   return {value: q, base: unit || 'each'};
 }

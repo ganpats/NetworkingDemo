@@ -106,7 +106,7 @@
   </template>
 
   <script>
-    const API_BASE = 'https://script.google.com/macros/s/AKfycbw5TAG-39Iu1XQuN7UsMjU2enA4jVZjuNlsHrN16M8n8WZLBArS9mZrqfMppqqnKm1aig/exec';
+    const API_BASE = 'https://script.google.com/macros/s/AKfycbzdFxhaZ9f4i6urdG8v46vSObimwiNF1MvUVUOqeDKTPeNP13FOTJt5ayW4Klo3V60C_Q/exec';
 
     // --- Utilities for unit normalization & conversion
     function toStandard(quantity, unit) {
@@ -116,7 +116,7 @@
       if (['g', 'gram', 'grams'].includes(unit)) return { value: q, base: 'g' };
       if (['l', 'litre', 'liter'].includes(unit)) return { value: q * 1000, base: 'ml' };
       if (['ml', 'milliliter', 'millilitre'].includes(unit)) return { value: q, base: 'ml' };
-      if (['each', 'pc', 'pcs', 'piece', 'pieces', 'packet'].includes(unit)) return { value: q, base: 'each' };
+      if (['each', 'pc', 'pcs', 'piece', 'pieces', 'packet', 'pkt', 'box', 'bottle', 'can', 'unit', 'units'].includes(unit)) return { value: q, base: 'each' };
       return { value: q, base: unit || 'each' };
     }
 
@@ -124,15 +124,24 @@
       // last: {lastPricePerStandardUnit, baseUnit}
       if (!last || !last.lastPricePerStandardUnit) return 0;
       const std = toStandard(qty, unit);
-      // if base mismatch, we cannot convert reliably (but usually both are 'g' or 'ml' or 'each')
+      // if base mismatch, we cannot convert reliably
       if (std.base !== last.baseUnit) {
-        // try best-effort: if last.baseUnit is 'g' and std.base is 'g' etc. Otherwise fallback.
-        // For simplicity: if base mismatch, return last.lastPricePaid (per-record) scaled by qty (unsafe)
-        return Math.round((last.lastPricePaid || 0) * (qty || 1));
+        // try best-effort: calculate price per item from last purchase if possible
+        const lastQty = parseFloat(last.lastQuantity) || 1;
+        const lastPaid = parseFloat(last.lastPricePaid) || 0;
+        const pricePerUnit = lastPaid / lastQty;
+        return Math.round(pricePerUnit * qty);
       }
       const perStd = parseFloat(last.lastPricePerStandardUnit) || 0;
       const total = perStd * std.value;
       return Math.round(total);
+    }
+
+    function formatPricePerUnit(pricePerStd, baseUnit) {
+      if (!pricePerStd) return '';
+      if (baseUnit === 'g') return `₹${Math.round(pricePerStd * 1000)}/kg`;
+      if (baseUnit === 'ml') return `₹${Math.round(pricePerStd * 1000)}/L`;
+      return `₹${Math.round(pricePerStd)}/each`;
     }
 
     // --- DOM management
@@ -167,21 +176,28 @@
       pricePaid.value = data.pricePaid || '';
       row.querySelector('.notes').value = data.notes || '';
 
-      // helper: set estimated display
+      // helper: set price based on qty/unit and last fetched info
       let lastFetched = null;
-      function updateEstimate() {
+      function updatePrice() {
         const q = parseFloat(qty.value) || 0;
         const u = unit.value || 'each';
-        let est = 0;
-        if (pricePaid.value) est = Math.round(parseFloat(pricePaid.value) || 0);
-        else if (lastFetched) est = estimatedPriceFromLast(lastFetched, q, u);
-        estimated.textContent = 'Est: ₹' + est;
-        // update total
+        if (lastFetched) {
+          const est = estimatedPriceFromLast(lastFetched, q, u);
+          if (est > 0) pricePaid.value = est;
+        }
+        updateEstimate();
+      }
+
+      function updateEstimate() {
+        const p = parseFloat(pricePaid.value) || 0;
+        estimated.textContent = 'Est: ₹' + Math.round(p);
         updateTotal();
       }
 
-      // when user changes qty/unit/price/notes run estimate
-      [qty, unit, pricePaid].forEach(el => el.addEventListener('input', updateEstimate));
+      // when user changes qty/unit run updatePrice
+      [qty, unit].forEach(el => el.addEventListener('input', updatePrice));
+      // when user changes price manually, just update estimate label/total
+      pricePaid.addEventListener('input', updateEstimate);
 
       // fetch suggestions
       let fetchTimer = null;
@@ -197,15 +213,18 @@
               if (!data || !data.length) { autoList.classList.add('hidden'); return; }
               data.forEach(item => {
                 const el = document.createElement('div');
-                el.className = 'p-2 hover:bg-slate-700 cursor-pointer text-sm';
-                el.innerHTML = `<div class="font-medium">${item.particular}</div>
+                el.className = 'p-2 hover:bg-slate-700 cursor-pointer text-sm border-b border-slate-800 last:border-0';
+                const pricePerUnitStr = formatPricePerUnit(item.lastPricePerStandardUnit, item.baseUnit);
+                el.innerHTML = `<div class="flex justify-between font-medium">
+                                  <span>${item.particular}</span>
+                                  <span class="text-indigo-400">${pricePerUnitStr}</span>
+                                </div>
                                 <div class="text-xs text-gray-400">Last ${item.unitSizeText || (item.lastQuantity + item.lastUnit)} • ₹${item.lastPricePaid} on ${item.lastDate}</div>`;
                 el.addEventListener('click', () => {
                   particular.value = item.particular;
                   // Fill unit and price from last purchase
                   unit.value = item.lastUnit || 'each';
-                  pricePaid.value = item.lastPricePaid || '';
-                  
+
                   // set last info
                   lastFetched = {
                     lastDate: item.lastDate,
@@ -216,8 +235,10 @@
                     baseUnit: item.baseUnit
                   };
                   lastInfo.textContent = `Last: ${item.lastQuantity}${item.lastUnit} • ₹${item.lastPricePaid} on ${item.lastDate}`;
-                  // optionally prefill qty to last quantity or keep current; here we keep current
-                  updateEstimate();
+
+                  // optionally prefill qty to 1 if empty
+                  if (!qty.value) qty.value = 1;
+                  updatePrice();
                   autoList.innerHTML = '';
                   autoList.classList.add('hidden');
                 });
@@ -247,12 +268,11 @@
             if (data) {
               lastFetched = data;
               lastInfo.textContent = `Last: ${data.lastQuantity}${data.lastUnit} • ₹${data.lastPricePaid} on ${data.lastDate}`;
-              
+
               // Fill unit and price if empty or on focus out match
               if (!unit.value || unit.value === 'each') unit.value = data.lastUnit || 'each';
-              if (!pricePaid.value) pricePaid.value = data.lastPricePaid || '';
-              
-              updateEstimate();
+              if (!qty.value) qty.value = 1;
+              updatePrice();
             } else {
               lastInfo.textContent = 'Last: -';
             }
