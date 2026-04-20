@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paad - Smart Price-Weight Calculator</title>
+    <meta name="description" content="Calculate actual weight for price or price for weight instantly.">
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div class="container">
+        <main class="calculator-card">
+            <h1>Paad</h1>
+            <p class="subtitle">Smart Proportional Calculator</p>
+
+            <div class="mode-toggle" id="modeToggle">
+                <button class="mode-btn active" data-mode="weight">Weight for Price</button>
+                <button class="mode-btn" data-mode="price">Price for Weight</button>
+            </div>
+
+            <div class="input-grid">
+                <!-- Reference Section -->
+                <div class="input-group">
+                    <label for="refWeight">Reference Weight</label>
+                    <div class="input-wrapper">
+                        <input type="number" id="refWeight" placeholder="e.g. 1.5" step="any" value="1.5">
+                        <span class="unit-label" id="refWeightUnit">KG</span>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="refPrice">Reference Price</label>
+                    <div class="input-wrapper">
+                        <input type="number" id="refPrice" placeholder="e.g. 100" step="any" value="100">
+                        <span class="unit-label">Rs.</span>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- Target Section -->
+                <div class="input-group" id="targetInputGroup">
+                    <label id="targetLabel" for="targetValue">Target Price</label>
+                    <div class="input-wrapper">
+                        <input type="number" id="targetValue" placeholder="e.g. 50" step="any" value="50">
+                        <span class="unit-label" id="targetValueUnit">Rs.</span>
+                    </div>
+                </div>
+            </div>
+
+            <section class="result-section">
+                <p class="result-label" id="resultLabel">You will get weight</p>
+                <div class="result-value">
+                    <span id="finalValue">0.75</span>
+                    <span class="result-unit" id="resultUnit">kg</span>
+                </div>
+            </section>
+        </main>
+        <footer>
+            &copy; 2026 Paad Calculator • Precision in every gram
+        </footer>
+    </div>
+    <script src="index.js"></script>
+</body>
+</html>
