@@ -69,11 +69,29 @@ function doGet(e) {
       // Default: return all items from Transactions sheet
       const ss = getSpreadsheet();
       const sheet = ss.getSheetByName(TRANSACTIONS_SHEET);
-      const data = sheet.getRange(1, 1, sheet.getLastRow(), 4).getValues();
+      if (!sheet || sheet.getLastRow() < 1) {
+        return sendJSON({});
+      }
+      const data = sheet.getDataRange().getValues();
 
       const itemsMap = {};
       for (let i = 1; i < data.length; i++) {
-        const [date, amount, particular, shop] = data[i];
+        const row = data[i];
+        let date = row[0];
+        let particular, amount, shop;
+
+        // Transactions sheet columns: [TransactionDate, Particular, PricePaid, Quantity, Unit, UnitSizeText, PricePerStandardUnit, ShopName, Notes]
+        // Fallback for legacy 4-column sheets: [Date, Amount, Particular, Shop]
+        if (row.length >= 8 || (typeof row[1] === 'string' && isNaN(Number(row[1])))) {
+          particular = row[1];
+          amount = row[2]; // PricePaid (3rd column)
+          shop = row[7];   // ShopName (8th column)
+        } else {
+          amount = row[1];
+          particular = row[2];
+          shop = row[3];
+        }
+
         if (particular) {
           itemsMap[particular] = {
             lastDate: date,
@@ -113,14 +131,14 @@ function doPost(e) {
       const unitSizeText = quantity && unit ? (quantity + unit) : (quantity || unit || '');
 
       // 1. Save to transactions sheet (Transactions)
-      // Fields: TransactionDate, Particular, Quantity, Unit, UnitSizeText, PricePaid, PricePerStandardUnit, ShopName, Notes
+      // Fields: TransactionDate, Particular, PricePaid, Quantity, Unit, UnitSizeText, PricePerStandardUnit, ShopName, Notes
       transactionSheet.appendRow([
         date,
         particular,
+        amount,
         quantity,
         unit,
         unitSizeText,
-        amount,
         priceCalc.pricePer,
         shop,
         notes
@@ -253,7 +271,8 @@ function getLastForItem(item) {
  * This function reads all transactions from a specified sheet and updates
  * the Catalog with the latest purchase info for each item.
  * 
- * Expected sheet columns: [Date, Amount, Particular, Shop]
+ * Expected Transactions sheet columns: [TransactionDate, Particular, PricePaid, Quantity, Unit, UnitSizeText, PricePerStandardUnit, ShopName, Notes]
+ * Legacy sheet columns: [Date, Amount, Particular, Shop]
  * 
  * Usage from Apps Script editor:
  *   populateCatalogFromSheet("FY2024-25")
@@ -281,22 +300,37 @@ function populateCatalogFromSheet(sheetName, qtyColumnIndex, unitColumnIndex) {
   const data = transactionSheet.getDataRange().getValues();
   
   // Skip header row, group by item name to find latest
-  const itemMap = {}; // { itemName: { date, amount, particular, shop, qty, unit } }
+  const itemMap = {}; // { itemName: { date, amount, particular, shop, qty, unit, unitSizeText, notes } }
   
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
-    const date = row[0];
-    const amount = row[1];
-    const particular = row[2];
-    const shop = row[3];
+    let date, amount, particular, shop, qty, unit, unitSizeText, notes;
+
+    if (sheetName === TRANSACTIONS_SHEET || (row.length >= 8 && typeof row[1] === 'string' && isNaN(Number(row[1])))) {
+      // Transactions sheet columns: [TransactionDate, Particular, PricePaid, Quantity, Unit, UnitSizeText, PricePerStandardUnit, ShopName, Notes]
+      date = row[0];
+      particular = row[1];
+      amount = row[2]; // PricePaid (3rd column)
+      qty = qtyColumnIndex !== undefined ? row[qtyColumnIndex] : (row[3] || 1);
+      unit = unitColumnIndex !== undefined ? row[unitColumnIndex] : (row[4] || 'each');
+      unitSizeText = row[5] || (qty && unit ? (qty + unit) : '');
+      shop = row[7];
+      notes = row[8] || '';
+    } else {
+      // Legacy sheet columns: [Date, Amount, Particular, Shop]
+      date = row[0];
+      amount = row[1];
+      particular = row[2];
+      shop = row[3];
+      qty = qtyColumnIndex !== undefined ? row[qtyColumnIndex] : 1;
+      unit = unitColumnIndex !== undefined ? row[unitColumnIndex] : 'each';
+      unitSizeText = qty && unit ? (qty + unit) : '';
+      notes = '';
+    }
     
     if (!particular) continue;
     
     const itemKey = particular.toString().toLowerCase().trim();
-    
-    // Get quantity and unit if columns are specified
-    const qty = qtyColumnIndex !== undefined ? row[qtyColumnIndex] : 1;
-    const unit = unitColumnIndex !== undefined ? row[unitColumnIndex] : 'each';
     
     // Keep the latest entry for each item (assumes sheet is sorted by date)
     const rowDate = parseDateString(date);
@@ -309,7 +343,9 @@ function populateCatalogFromSheet(sheetName, qtyColumnIndex, unitColumnIndex) {
         particular: particular,
         shop: shop,
         qty: qty,
-        unit: unit
+        unit: unit,
+        unitSizeText: unitSizeText,
+        notes: notes
       };
     }
   }
@@ -326,9 +362,11 @@ function populateCatalogFromSheet(sheetName, qtyColumnIndex, unitColumnIndex) {
       item.date,
       item.qty,
       item.unit,
+      item.unitSizeText,
       item.amount,
       priceCalc.pricePer,
-      priceCalc.base
+      priceCalc.base,
+      item.notes
     );
     updateCount++;
   }
